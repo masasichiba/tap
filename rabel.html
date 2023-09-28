@@ -1,0 +1,105 @@
+<html>
+  <head>
+    <title>DeviceMotion Test</title>
+  </head>
+  <body>
+    <div>
+      <button id="startButton" onClick="toggleDataCollection()">Click</button>
+      <button onClick="downloadCSV()">Download CSV</button>
+
+      <span id="x">0</span>
+      <span id="y">0</span>
+      <span id="z">0</span>
+      <span id="alpha">0</span>
+      <span id="beta">0</span>
+      <span id="gamma">0</span>
+    </div>
+
+    <div>
+      <label for="labelSelect">Label: </label>
+      <select id="labelSelect">
+        <option value="">-- Select --</option>
+        <option value="sleepy">Sleepy</option>
+        <option value="awake">Awake</option>
+      </select>
+    </div>
+
+    <script>
+      let sensorData = [];
+      let isDataCollectionStarted = false;
+
+      function toggleDataCollection() {
+        if (!isDataCollectionStarted) {
+          startDataCollection();
+        } else {
+          stopDataCollection();
+        }
+      }
+
+      function startDataCollection() {
+        isDataCollectionStarted = true;
+        document.getElementById('startButton').innerText = 'Stop';
+
+        if (DeviceMotionEvent.requestPermission) {
+          DeviceMotionEvent.requestPermission()
+            .then(permissionState => {
+              if (permissionState === 'granted') {
+                window.addEventListener("devicemotion", handleDeviceMotionEvent);
+              }
+            })
+            .catch(console.error);
+        } else {
+          alert('DeviceMotionEvent.requestPermission is not found');
+        }
+      }
+
+      function stopDataCollection() {
+        isDataCollectionStarted = false;
+        document.getElementById('startButton').innerText = 'Click';
+
+        window.removeEventListener("devicemotion", handleDeviceMotionEvent);
+      }
+
+      function handleDeviceMotionEvent(event) {
+        if (!event.accelerationIncludingGravity || !event.rotationRate) {
+          alert('Required sensor data is missing.');
+          return;
+        }
+
+        const labelSelect = document.getElementById('labelSelect');
+        const label = labelSelect.value;
+
+        const data = {
+          x: event.accelerationIncludingGravity.x,
+          y: event.accelerationIncludingGravity.y,
+          z: event.accelerationIncludingGravity.z,
+          alpha: event.rotationRate.alpha,
+          beta: event.rotationRate.beta,
+          gamma: event.rotationRate.gamma
+        };
+
+        sensorData.push(data);
+
+        document.getElementById('x').innerHTML = data.x;
+        document.getElementById('y').innerHTML = data.y;
+        document.getElementById('z').innerHTML = data.z;
+        document.getElementById('alpha').innerHTML = data.alpha;
+        document.getElementById('beta').innerHTML = data.beta;
+        document.getElementById('gamma').innerHTML = data.gamma;
+      }
+
+      function downloadCSV() {
+        const csvHeader = "x,y,z,alpha,beta,gamma,label";
+        const csvData = sensorData.map(data => Object.values(data).join(',')).join('\n');
+        const csvContent = "data:text/csv;charset=utf-8," + csvHeader + "\n" + csvData;
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', 'sensor_data.csv');
+        document.body.appendChild(link); // Required for Firefox
+        link.click();
+      }
+    </script>
+  </body>
+</html>
+
