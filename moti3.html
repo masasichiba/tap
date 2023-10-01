@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>DeviceMotion Test</title>
+</head>
+<body>
+  <div>
+    <button id="startButton" onClick="toggleDataCollection()">Click</button>
+    <button onClick="downloadCSV()">Download CSV</button>
+
+    <span id="x">0</span>
+    <span id="y">0</span>
+    <span id="z">0</span>
+    <span id="alpha">0</span>
+    <span id="beta">0</span>
+    <span id="gamma">0</span>
+    
+    <div id="countdown"></div>
+  </div>
+  <script>
+    let sensorData1 = [];
+    let sensorData2 = [];
+    let isDataCollectionStarted = false;
+    let dataCollectionIndex = 1;
+    let countdown = 30;
+
+    function toggleDataCollection() {
+      if (!isDataCollectionStarted) {
+        startDataCollection();
+        startCountdown();
+      } else {
+        stopDataCollection();
+        stopCountdown();
+      }
+    }
+
+    function startCountdown() {
+      const countdownElement = document.getElementById('countdown');
+      const countdownInterval = setInterval(() => {
+        countdown--;
+        countdownElement.innerText = `Time remaining: ${countdown} seconds`;
+
+        if (countdown <= 0) {
+          clearInterval(countdownInterval);
+          stopDataCollection();
+        }
+      }, 1000);
+    }
+
+    function stopCountdown() {
+      countdown = 30;
+      document.getElementById('countdown').innerText = '';
+    }
+
+    function startDataCollection() {
+      isDataCollectionStarted = true;
+      document.getElementById('startButton').innerText = 'Stop';
+
+      if (DeviceMotionEvent.requestPermission) {
+        DeviceMotionEvent.requestPermission()
+          .then(permissionState => {
+            if (permissionState === 'granted') {
+              window.addEventListener("devicemotion", handleDeviceMotionEvent);
+            }
+          })
+          .catch(console.error);
+      } else {
+        alert('DeviceMotionEvent.requestPermission is not found');
+      }
+    }
+
+    function stopDataCollection() {
+      isDataCollectionStarted = false;
+      document.getElementById('startButton').innerText = 'Click';
+
+      window.removeEventListener("devicemotion", handleDeviceMotionEvent);
+    }
+
+    function handleDeviceMotionEvent(event) {
+      if (!event.accelerationIncludingGravity || !event.rotationRate) {
+        alert('Required sensor data is missing.');
+        return;
+      }
+
+      const data = {
+        x: event.accelerationIncludingGravity.x,
+        y: event.accelerationIncludingGravity.y,
+        z: event.accelerationIncludingGravity.z,
+        alpha: event.rotationRate.alpha,
+        beta: event.rotationRate.beta,
+        gamma: event.rotationRate.gamma
+      };
+
+      if (dataCollectionIndex === 1) {
+        sensorData1.push(data);
+      } else if (dataCollectionIndex === 2) {
+        sensorData2.push(data);
+      }
+
+      document.getElementById('x').innerHTML = data.x;
+      document.getElementById('y').innerHTML = data.y;
+      document.getElementById('z').innerHTML = data.z;
+      document.getElementById('alpha').innerHTML = data.alpha;
+      document.getElementById('beta').innerHTML = data.beta;
+      document.getElementById('gamma').innerHTML = data.gamma;
+    }
+
+    function downloadCSV() {
+      let sensorData;
+      if (dataCollectionIndex === 1) {
+        sensorData = sensorData1;
+      } else if (dataCollectionIndex === 2) {
+        sensorData = sensorData2;
+      } else {
+        return; // データ収集が終了した後の処理
+      }
+
+      const csvContent = "data:text/csv;charset=utf-8," +
+        "x,y,z,alpha,beta,gamma\n" +
+        sensorData.map(data => Object.values(data).join(',')).join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', 'sensor_data_' + dataCollectionIndex + '.csv');
+      document.body.appendChild(link); // Required for Firefox
+      link.click();
+
+      // ファイル出力後にsensorDataをリセットし、dataCollectionIndexをインクリメントする
+      if (dataCollectionIndex === 1) {
+        sensorData1 = [];
+      } else if (dataCollectionIndex === 2) {
+        sensorData2 = [];
+      }
+      dataCollectionIndex++;
+    }
+  </script>
+</body>
+</html>
