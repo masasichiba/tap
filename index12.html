@@ -5,8 +5,8 @@
   <title>Tap App</title>
   <style>
     #button {
-      width: 1000px;
-      height: 1000px;
+      width: 500 px;
+      height: 500px;
       background-color: red;
       position: absolute;
       top: 50%;
@@ -27,6 +27,24 @@
   <div id="button">Tap</div>
 
   <script>
+
+function startDataCollection() {
+      isDataCollectionStarted = true;
+      document.getElementById('startButton').innerText = 'Stop';
+
+      if (DeviceMotionEvent.requestPermission) {
+        DeviceMotionEvent.requestPermission()
+          .then(permissionState => {
+            if (permissionState === 'granted') {
+              window.addEventListener("devicemotion", handleDeviceMotionEvent);
+            }
+          })
+          .catch(console.error);
+      } else {
+        alert('DeviceMotionEvent.requestPermission is not found');
+      }
+    }
+    
     // グローバル変数
     let tapCount = 0;
     let sensorData = [];
