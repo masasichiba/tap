@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Tap App</title>
+  <style>
+    #button {
+      width: 100px;
+      height: 100px;
+      background-color: red;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="button">Tap</div>
+
+  <script>
+    // グローバル変数
+    let tapCount = 0;
+    let sensorData = [];
+
+    // センサーデータの取得
+    function handleSensorData(event) {
+      const { acceleration, rotationRate } = event;
+
+      // 取得したデータを配列に追加
+      sensorData.push({
+        tap: tapCount,
+        accelerationX: acceleration.x,
+        accelerationY: acceleration.y,
+        accelerationZ: acceleration.z,
+        gyroX: rotationRate.alpha,
+        gyroY: rotationRate.beta,
+        gyroZ: rotationRate.gamma
+      });
+    }
+
+    // タップボタンのクリック処理
+    function handleTap() {
+      tapCount++;
+
+      // ボタンのタップ数を更新
+      document.getElementById('button').innerText = `Tap (${tapCount})`;
+
+      if (tapCount === 10) {
+        // タップ数が10回に達したらデータを出力
+        exportDataToCSV();
+      }
+    }
+
+    // CSVファイルにデータを出力
+    function exportDataToCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Tap,Acceleration X,Acceleration Y,Acceleration Z,Gyro X,Gyro Y,Gyro Z\n";
+
+      // データをCSV形式に変換
+      sensorData.forEach(data => {
+        csvContent += `${data.tap},${data.accelerationX},${data.accelerationY},${data.accelerationZ},${data.gyroX},${data.gyroY},${data.gyroZ}\n`;
+      });
+
+      // CSVファイルをダウンロード
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "sensor_data.csv");
+      document.body.appendChild(link);
+      link.click();
+    }
+
+    // タップボタンの色をランダムに変更する
+    function changeButtonColor() {
+      const button = document.getElementById('button');
+      const randomColor = getRandomColor();
+      button.style.backgroundColor = randomColor;
+
+      // 2秒から3秒のランダムな時間後に再度色を変更する
+      const delay = Math.floor(Math.random() * 1000) + 2000;
+      setTimeout(changeButtonColor, delay);
+    }
+
+    // ランダムな色を生成
+    function getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    }
+
+    // イベントリスナーの追加
+    document.getElementById('button').addEventListener('click', handleTap);
+    window.addEventListener('devicemotion', handleSensorData);
+    window.addEventListener('deviceorientation', handleSensorData);
+
+    // 最初のボタンの色変更を開始
+    changeButtonColor();
+  </script>
+</body>
+</html>
